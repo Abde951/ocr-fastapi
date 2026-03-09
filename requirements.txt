@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+opencv-python
+pytesseract
+Pillow
+python-multipart
+pytest
+httpx
