@@ -1,6 +1,8 @@
 """Tests for OCR endpoints."""
 
+from dataclasses import dataclass
 from io import BytesIO
+from types import SimpleNamespace
 
 import httpx
 from PIL import Image
@@ -42,18 +44,60 @@ async def test_ocr_endpoint_rejects_non_image_upload() -> None:
     assert response.json()["detail"] == "Unsupported file type. Upload a valid image."
 
 
-@pytest.mark.parametrize("ocr_output", ["Hello world from OCR", ""])
+@dataclass
+class FakeWord:
+    confidence: float | None
+
+
+@dataclass
+class FakeParagraph:
+    words: list[FakeWord]
+
+
+@dataclass
+class FakeBlock:
+    paragraphs: list[FakeParagraph]
+
+
+@dataclass
+class FakePage:
+    blocks: list[FakeBlock]
+
+
+@dataclass
+class FakeAnnotation:
+    text: str
+    pages: list[FakePage]
+
+
+@pytest.mark.parametrize(
+    ("ocr_output", "confidence"),
+    [("Hello world from OCR", 0.85), ("", None)],
+)
 @pytest.mark.anyio
 async def test_ocr_endpoint_returns_ocr_response(
     monkeypatch: pytest.MonkeyPatch,
     ocr_output: str,
+    confidence: float | None,
 ) -> None:
     """OCR endpoint returns extracted text from the OCR service."""
 
-    def mock_image_to_string(_image: object) -> str:
-        return ocr_output
+    words = [] if confidence is None else [FakeWord(confidence=confidence), FakeWord(confidence=confidence)]
+    annotation = FakeAnnotation(
+        text=ocr_output,
+        pages=[FakePage(blocks=[FakeBlock(paragraphs=[FakeParagraph(words=words)])])],
+    )
 
-    monkeypatch.setattr("app.services.ocr_service.pytesseract.image_to_string", mock_image_to_string)
+    class FakeVisionClient:
+        def document_text_detection(self, *, image: object) -> SimpleNamespace:
+            assert image is not None
+            return SimpleNamespace(
+                full_text_annotation=annotation,
+                error=SimpleNamespace(message=""),
+            )
+
+    monkeypatch.setattr("app.services.ocr_service.get_vision_client", lambda: FakeVisionClient())
+    monkeypatch.setattr("app.services.ocr_service.build_vision_image", lambda content: content)
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -63,4 +107,4 @@ async def test_ocr_endpoint_returns_ocr_response(
         )
 
     assert response.status_code == 200
-    assert response.json() == {"text": ocr_output, "confidence": None}
+    assert response.json() == {"text": ocr_output, "confidence": confidence}

@@ -9,7 +9,7 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
-    description="A small production-style OCR API built with FastAPI and Tesseract.",
+    description="A small production-style OCR API built with FastAPI and Google Cloud Vision.",
 )
 
 app.include_router(ocr_router)

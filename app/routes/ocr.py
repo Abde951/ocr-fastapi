@@ -19,5 +19,5 @@ async def run_ocr(file: UploadFile = File(...)) -> OCRResponse:
             detail="Unsupported file type. Upload a valid image.",
         )
 
-    text = await extract_text_from_upload(file)
-    return OCRResponse(text=text, confidence=None)
+    text, confidence = await extract_text_from_upload(file)
+    return OCRResponse(text=text, confidence=confidence)

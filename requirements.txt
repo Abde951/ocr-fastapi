@@ -1,7 +1,8 @@
 fastapi
 uvicorn
 opencv-python
-pytesseract
+google-cloud-vision
+pydantic-settings
 Pillow
 python-multipart
 pytest
