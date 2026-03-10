@@ -38,11 +38,18 @@ pip install -r requirements.txt
 2. Enable the Vision API.
 3. Create a service account with Vision access.
 4. Download the service account JSON key.
-5. Point `GOOGLE_APPLICATION_CREDENTIALS` at that file.
+5. Create a local `.env` file that points `GOOGLE_APPLICATION_CREDENTIALS` at that file.
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+cat <<'env' > .env
+OCR_APP_NAME=OCR FastAPI
+OCR_APP_VERSION=0.1.0
+OCR_DEBUG=false
+GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json
+env
 ```
+
+The application loads `.env` automatically through `pydantic-settings`. The `.env` file is gitignored, so the credential path stays local to your machine.
 
 ## Running the Server
 
@@ -75,7 +82,7 @@ curl -X POST "http://localhost:8000/ocr" \
 ## Testing
 
 ```bash
-pytest
+.venv/bin/pytest
 ```
 
 ## Docker
